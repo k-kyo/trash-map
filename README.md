@@ -16,3 +16,9 @@
     - user:RyosukeNAKATA
 
 ![demo](./media/demo.png)
+
+### 環境
+- python3.8
+- geopy
+- mip
+- sqlite3
