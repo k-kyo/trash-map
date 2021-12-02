@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <title>Trash Map Request</title>
+    <style>
+        #mapid {
+            height: 500px;
+            width: 1300px;
+        }
+        input[name=clat], input[name=clng] {
+            display: none;
+        }
+    </style>
+    <script>
+        let clat = 35.6313382, clng = 139.7862498;
+        // navigator.geolocation.getCurrentPosition((pos) => {
+        //     clat = pos.coords.latitude;
+        //     clng = pos.coords.longitude;
+        // });
+    </script>
+</head>
+<body class="bg-light">
+    <header class="bg-dark text-white">
+        <div class="m-0 p-3 row justify-content-between">
+            <div class="col-10">Trash Map</div>
+            <div class="col-1"><a class="text-white" href="{% url 'point' %}">Point</a></div>
+            <div class="col-1"><a class="text-white" href="{% url 'tsp' %}">Request</a></div>
+        </div>
+    </header>
+    <main>
+        <div id="mapid" class="mx-auto m-4"></div>
+        <div class="row justify-content-center">
+            <form method="POST">
+                {% csrf_token %}
+                <input type="number" step="any" name="clat" required>
+                <input type="number" step="any" name="clng" required>
+                <p>種類：<input type="text" maxlength="10" name="type"></p>
+                <p>期間：<input type="date" name="start"> 〜 <input type="date" name="end"></p>
+                <div class="text-right">
+                    <button class="btn btn-primary">送信</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script>
+        let map = L.map("mapid", {
+            center: [clat, clng],
+            zoom: 11,
+        });
+        let tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; <a href='http://osm.org/copyright'><font size=1 color='black'>OpenStreetMap</a> contributors</font>, <a href='http://creativecommons.org/licenses/by-sa/2.0/'><font size=1 color='black'>CC-BY-SA</font></a>",
+        });
+        tileLayer.addTo(map);
+        $("input[name=clat]").attr('value', clat);
+        $("input[name=clng]").attr('value', clng);
+        {% if points %}
+            let popup;
+            let iconMarkers = L.featureGroup();
+            let lines = L.polyline({{ points }}, {color: 'red'});
+            lines.addTo(map);
+            {% for point, remark in markers %}
+                popup = L.popup({closeOnClick: false, autoClose: false}).setContent('{{ remark }}');
+                iconMarkers.addLayer(L.marker({{ point }}).addTo(map).bindPopup(popup).openPopup());
+            {% endfor %}
+            iconMarkers.addTo(map);
+            map.fitBounds(iconMarkers.getBounds());
+        {% endif %}
+    </script>
+</body>
+</html>
